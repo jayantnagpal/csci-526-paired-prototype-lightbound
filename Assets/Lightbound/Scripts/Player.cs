@@ -108,5 +108,9 @@ public class Player : MonoBehaviour
         GUI.Label(new Rect(20, 20, 400, 30), $"Light: {Mathf.CeilToInt(lightAmount)}");
         if (_won) GUI.Label(new Rect(20, 45, 400, 30), "You escaped! Press R to play again.");
         else if (!HasLight) GUI.Label(new Rect(20, 45, 400, 30), "Out of light. Find a shard, or press R.");
+
+        // controls, bottom-left
+        GUI.Label(new Rect(20, Screen.height - 34, 900, 24),
+                  "A/D or left/right arrows: move     Space or w: jump     Mouse cursor: aim    Left click: throw light     R: restart");
     }
 }
