@@ -1,11 +1,12 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Player: run/jump, a limited light that shrinks as you throw it, and touching things (tags):
 /// Shard = +light, Finish = exit, Enemy = restart the level.
-/// The light is a child Sprite Mask that cuts a hole in the "Darkness" sprite; its size is the light radius,
+/// The light is a child hard-edged Point Light 2D (the world is lit only by a dim Global Light 2D); its radius shrinks with the reserve,
 /// and it shifts ahead in the direction you're moving.
 /// Controls: A/D move, Space jump, Left-click throw light at the cursor, R restart.
 /// </summary>
@@ -18,7 +19,7 @@ public class Player : MonoBehaviour
     public LayerMask groundMask;
 
     [Header("Light")]
-    public Transform lightMask;       // child with a circle Sprite Mask
+    public Transform lightMask;       // child with a hard-edged Point Light 2D
     public float maxLight = 100f;
     public float lightAmount = 100f;
     public float throwCost = 15f;
@@ -34,11 +35,12 @@ public class Player : MonoBehaviour
     public float throwSpeed = 15f;
 
     public bool HasLight => lightAmount > 0f;
-    public float LightRadius => lightMask != null ? lightMask.localScale.x * 0.5f : 0f;
+    public float LightRadius => _light != null ? _light.pointLightOuterRadius : 0f;
     /// <summary>Centre of the light circle (it leads ahead of the player). Enemies notice you from here.</summary>
     public Vector2 LightCenter => lightMask != null ? (Vector2)lightMask.position : (Vector2)transform.position;
 
     Rigidbody2D _rb;
+    Light2D _light;
     Collider2D _col;
     bool _won;
     int _facing = 1;
@@ -46,6 +48,7 @@ public class Player : MonoBehaviour
     void Awake()
     {
         _rb = GetComponent<Rigidbody2D>();
+        _light = lightMask.GetComponent<Light2D>();
         _col = GetComponent<Collider2D>();
     }
 
@@ -79,7 +82,8 @@ public class Player : MonoBehaviour
         // light radius follows the reserve
         float target = HasLight ? Mathf.Lerp(minRadius, maxRadius, lightAmount / maxLight) : darkRadius;
         float r = Mathf.Lerp(LightRadius, target, Time.deltaTime * 6f);
-        lightMask.localScale = new Vector3(r * 2f, r * 2f, 1f);
+        _light.pointLightOuterRadius = r;
+        _light.pointLightInnerRadius = r * 0.97f; // inner ≈ outer gives a hard-edged circle
 
         // light leads ahead in the direction you're moving (and stays facing that way when you stop)
         if (x != 0f) _facing = x > 0f ? 1 : -1;

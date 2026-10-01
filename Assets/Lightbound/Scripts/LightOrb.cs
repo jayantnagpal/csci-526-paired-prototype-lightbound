@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 
 /// <summary>
 /// Thrown light. Destroys anything tagged "Barrier", stuns enemies it passes through,
@@ -9,19 +10,21 @@ public class LightOrb : MonoBehaviour
 {
     public static readonly List<LightOrb> Lures = new List<LightOrb>();
 
-    public Transform lightMask;          // child with a circle Sprite Mask
+    public Transform lightMask;          // child with a hard-edged Point Light 2D
     public float lureTime = 6f;
     public float stunTime = 2f;
     public float maxFlightTime = 2.5f;   // hangs in the air as a lure if it never hits anything
 
     public bool IsLure { get; private set; }
     float _landedAt, _thrownAt;
-    Vector3 _maskScale;
+    Light2D _light;
+    float _startRadius;
 
     void Awake()
     {
         _thrownAt = Time.time;
-        if (lightMask != null) _maskScale = lightMask.localScale;
+        if (lightMask != null) _light = lightMask.GetComponent<Light2D>();
+        if (_light != null) _startRadius = _light.pointLightOuterRadius;
     }
 
     void OnDisable() => Lures.Remove(this);
@@ -58,7 +61,11 @@ public class LightOrb : MonoBehaviour
     void Update()
     {
         if (!IsLure && Time.time - _thrownAt > maxFlightTime) Land();
-        if (IsLure && lightMask != null)
-            lightMask.localScale = _maskScale * Mathf.Max(0f, 1f - (Time.time - _landedAt) / lureTime);
+        if (IsLure && _light != null)
+        {
+            float r = _startRadius * Mathf.Max(0f, 1f - (Time.time - _landedAt) / lureTime);
+            _light.pointLightOuterRadius = r;
+            _light.pointLightInnerRadius = r * 0.97f;
+        }
     }
 }
